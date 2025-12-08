@@ -25,6 +25,14 @@ Volleyball Heatmap displays a grid that represents a volleyball court playing ar
 
 Users can interact with the grid to add data points, which are visualized as either heatmap "clouds" and dots, or as numbered lines representing specific shot paths.
 
+## Screen Captures
+
+![StartPage](https://github.com/user-attachments/assets/5cb9fa71-ffc0-480d-a988-043a810181ee)
+
+![SimpleHeatmap](https://github.com/user-attachments/assets/e9e04674-de7a-428e-824c-a60f65a9ab18)
+
+![Charting](https://github.com/user-attachments/assets/e6511cdb-c33a-44eb-935f-3c3a8b029bf5)
+
 ## Features
 
 -   **Two Operating Modes**:
