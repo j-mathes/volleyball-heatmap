@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<!--
+  Volleyball Heatmap
+  Version 1.0
+  Copyright (c) 2025 Jared Mathes
+  
+  This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0
+  International License. To view a copy of this license, visit:
+  http://creativecommons.org/licenses/by-nc-sa/4.0/
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Volleyball Heatmap</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Session Start Modal -->
+    <div id="sessionModal" class="modal">
+        <div class="modal-content">
+            <div class="version-info">v1.0</div>
+            <h1 class="modal-title">Volleyball Heatmap</h1>
+            <h2>Start New Session</h2>
+            <div class="mode-selection">
+                <label><input type="radio" name="sessionMode" value="simpleHeatmap" checked> Simple Heatmap</label>
+                <label><input type="radio" name="sessionMode" value="heatmapCharting"> Heatmap and Charting</label>
+            </div>
+            <div id="sessionModeTitle" class="session-mode-title">Simple Heatmap</div>
+            <input type="text" id="sessionNameInput" placeholder="Enter session name..." maxlength="50">
+            <div class="modal-buttons" style="margin-top: 5px;">
+                <button id="startSessionBtn" class="btn-primary">Start Session</button>
+                <button id="loadSessionBtn" class="btn-secondary">Load Session</button>
+                <button id="combineSessionBtn" class="btn-secondary">Combine Heatmaps</button>
+            </div>
+            <div class="credit-link">
+                <a href="https://github.com/j-mathes/volleyball-heatmap" target="_blank">by Jared Mathes</a>
+            </div>
+            <div class="readme-link">
+                <a href="https://github.com/j-mathes/volleyball-heatmap/blob/main/README.md" target="_blank">README</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Combine Mode Selection Modal -->
+    <div id="combineModeModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="version-info">v1.0</div>
+            <h2>Select Heatmap Type to Combine</h2>
+            <p>You can only combine heatmaps of the same type.</p>
+            <div class="mode-selection" style="margin-top: 15px;">
+                <label><input type="radio" name="combineMode" value="simpleHeatmap" checked> Simple Heatmap</label>
+                <label><input type="radio" name="combineMode" value="heatmapCharting"> Heatmap and Charting</label>
+            </div>
+            <div class="modal-buttons">
+                <button id="confirmCombineModeBtn" class="btn-primary">Continue</button>
+                <button id="cancelCombineModeBtn" class="btn-secondary">Cancel</button>
+            </div>
+            <div class="credit-link">
+                <a href="https://github.com/j-mathes" target="_blank">by Jared Mathes</a>
+            </div>
+            <div class="readme-link">
+                <a href="https://github.com/j-mathes" target="_blank">README</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Combine Files Modal -->
+    <div id="combineFilesModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="version-info">v1.0</div>
+            <h2>Select Heatmaps to Combine</h2>
+            <div id="combineModeDisplay" class="session-mode-title"></div>
+            <div class="file-name-display" id="combineFilesDisplay">No files chosen</div>
+            <input type="file" id="combineFilesInput" accept=".json" multiple style="display: none;">
+            <button id="addFilesBtn" class="btn-secondary" style="margin-bottom: 10px;">Add Files</button>
+            <button id="removeSelectedBtn" class="btn-secondary" style="margin-bottom: 10px; display: none;">Remove Selected</button>
+            <p style="margin-top: 10px; font-size: 0.9rem; color: #666;">Click files to select/deselect. Select 2 or more heatmap files to combine</p>
+            <div class="modal-buttons">
+                <button id="confirmCombineBtn" class="btn-primary">Combine</button>
+                <button id="cancelCombineFilesBtn" class="btn-secondary">Cancel</button>
+            </div>
+            <div class="credit-link">
+                <a href="https://github.com/j-mathes" target="_blank">by Jared Mathes</a>
+            </div>
+            <div class="readme-link">
+                <a href="https://github.com/j-mathes" target="_blank">README</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save Combined Modal -->
+    <div id="saveCombinedModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="version-info">v1.0</div>
+            <h2>Save Combined Heatmap</h2>
+            <p>Enter a name for the combined heatmap session:</p>
+            <input type="text" id="combinedSessionNameInput" placeholder="Enter session name..." maxlength="50">
+            <div class="modal-buttons">
+                <button id="saveCombinedBtn" class="btn-primary">Save</button>
+                <button id="cancelSaveCombinedBtn" class="btn-secondary">Cancel</button>
+            </div>
+            <div class="credit-link">
+                <a href="https://github.com/j-mathes" target="_blank">by Jared Mathes</a>
+            </div>
+            <div class="readme-link">
+                <a href="https://github.com/j-mathes" target="_blank">README</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Session Modal -->
+    <div id="loadModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="version-info">v1.0</div>
+            <h2>Load Session</h2>
+            <div class="file-name-display" id="fileNameDisplay">No file chosen</div>
+            <input type="file" id="fileInput" accept=".json">
+            <div class="load-options">
+                <label><input type="radio" name="loadMode" value="continue" checked> Continue editing</label>
+                <label><input type="radio" name="loadMode" value="viewOnly"> View only</label>
+            </div>
+            <div class="modal-buttons">
+                <button id="confirmLoadBtn" class="btn-primary">Load</button>
+                <button id="cancelLoadBtn" class="btn-secondary">Cancel</button>
+            </div>
+            <div class="credit-link">
+                <a href="https://github.com/j-mathes" target="_blank">by Jared Mathes</a>
+            </div>
+            <div class="readme-link">
+                <a href="https://github.com/j-mathes" target="_blank">README</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save Confirmation Modal -->
+    <div id="saveConfirmModal" class="modal" style="display: none;" role="dialog" aria-labelledby="saveConfirmTitle" aria-describedby="saveConfirmDesc">
+        <div class="modal-content">
+            <div class="version-info">v1.0</div>
+            <h2 id="saveConfirmTitle">Save Session</h2>
+            <p id="saveConfirmDesc">You have unsaved data. Would you like to save before starting a new session?</p>
+            <div class="modal-buttons">
+                <button id="confirmSaveYesBtn" class="btn-primary">Yes</button>
+                <button id="confirmSaveNoBtn" class="btn-secondary">No</button>
+            </div>
+            <div class="credit-link">
+                <a href="https://github.com/j-mathes" target="_blank">by Jared Mathes</a>
+            </div>
+            <div class="readme-link">
+                <a href="https://github.com/j-mathes" target="_blank">README</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="container" id="mainContainer" style="display: none;">
+        <div id="modeBanner" class="mode-banner" style="display: none;"></div>
+        <h1 id="sessionTitle">Volleyball Heatmap</h1>
+        <div class="rotation-list">
+            <div id="rotationList"></div>
+            <button id="clearRotationFiltersBtn" class="clear-rotation-filters-btn" style="display: none;">Clear Filters</button>
+        </div>
+        <div class="jersey-number-list">
+            <div id="jerseyNumberList"></div>
+            <button id="clearJerseyFiltersBtn" class="clear-jersey-filters-btn" style="display: none;">Clear Filters</button>
+        </div>
+        <div class="canvas-container">
+            <canvas id="gridCanvas" width="600" height="600"></canvas>
+            <canvas id="heatmapCanvas" width="600" height="600"></canvas>
+            <canvas id="overlayCanvas" width="600" height="600"></canvas>
+        </div>
+        <div class="controls">
+            <div class="control-row">
+                <button id="undoBtn" disabled>↶ Undo</button>
+                <button id="redoBtn" disabled>↷ Redo</button>
+                <button id="toggleLinesBtn">Hide Lines</button>
+                <button id="clearBtn">Clear All</button>
+                <button id="saveBtn">💾 Save</button>
+                <button id="newSessionBtn">New Session</button>
+            </div>
+            <div class="info">
+                <span id="clickCount">Points: 0</span>
+                <span id="coordinates">Position: -</span>
+                <span id="jerseyNumberInput">Jersey Number: -</span>
+            </div>
+        </div>
+        <div id="viewOnlyBanner" class="view-only-banner" style="display: none;">
+            VIEW ONLY MODE
+        </div>
+        <div class="credit-link">
+            <a href="https://github.com/j-mathes" target="_blank">by Jared Mathes</a>
+        </div>
+        <div class="readme-link">
+            <a href="https://github.com/j-mathes" target="_blank">README</a>
+        </div>
+    </div>
+    <script src="heatmap.js"></script>
+</body>
+</html>
