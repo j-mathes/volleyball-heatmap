@@ -1,6 +1,6 @@
 /**
  * Volleyball Heatmap - Styles
- * Version 1.0
+ * Version 1.1
  * Copyright (c) 2025 Jared Mathes
  * 
  * This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0
@@ -533,6 +533,72 @@ canvas {
     text-align: center;
 }
 
+.track-team-btn {
+    position: absolute;
+    top: 29px;
+    right: 25px;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    transition: background-color 0.2s;
+    background-color: #007bff;
+    color: white;
+    text-align: center;
+    white-space: nowrap;
+    width: 70px;
+    box-sizing: border-box;
+}
+
+.track-team-btn:hover {
+    background-color: #0056b3;
+}
+
+.track-team-btn.toggled-off {
+    background-color: #ccc;
+    color: white;
+}
+
+.team-buttons {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    width: 100%;
+}
+
+.team-btn {
+    flex: 1;
+    padding: 6px 4px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    font-family: monospace;
+    background-color: #d3d3d3;
+    color: #333;
+    transition: background-color 0.2s;
+}
+
+.team-btn:hover {
+    background-color: #b8b8b8;
+}
+
+.team-btn.active {
+    color: white;
+}
+
+/* Us button - green to match line color */
+#teamUsBtn.active {
+    background-color: #00AA00;
+}
+
+/* Opp button - blue to match line color */
+#teamOppBtn.active {
+    background-color: #0000FF;
+}
+
 .mode-banner {
     background-color: #007bff;
     color: white;
@@ -579,6 +645,38 @@ canvas {
     left: 10px;
     font-size: 0.7rem;
     color: #666;
+}
+
+.track-rotation-btn {
+    margin-bottom: 16px;
+    padding: 6px 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    transition: background-color 0.2s;
+    background-color: #007bff;
+    color: white;
+    text-align: center;
+    white-space: nowrap;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.track-rotation-btn:hover {
+    background-color: #0056b3;
+}
+
+.track-rotation-btn.toggled-off {
+    background-color: #ccc;
+    color: white;
+}
+
+.rotation-list-item.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+    color: white;
 }
 
 .readme-link {

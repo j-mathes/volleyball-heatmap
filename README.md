@@ -1,6 +1,6 @@
 # Volleyball Heatmap
 
-**Version 1.0**
+**Version 1.1**
 
 This repository contains a web-based application for creating and visualizing volleyball heatmaps on a grid. It is designed for interactive data plotting with session management features.
 
@@ -27,11 +27,11 @@ Users can interact with the grid to add data points, which are visualized as eit
 
 ## Screen Captures
 
-![StartPage](https://github.com/user-attachments/assets/5cb9fa71-ffc0-480d-a988-043a810181ee)
+![StartPage](images/StartPage.jpg)
 
-![SimpleHeatmap](https://github.com/user-attachments/assets/e9e04674-de7a-428e-824c-a60f65a9ab18)
+![SimpleHeatmap](images/SimpleHeatmap.jpg)
 
-![Charting](https://github.com/user-attachments/assets/e6511cdb-c33a-44eb-935f-3c3a8b029bf5)
+![Charting](images/Charting.jpg)
 
 ## Features
 
@@ -52,11 +52,25 @@ Users can interact with the grid to add data points, which are visualized as eit
     -   **View-Only Mode**: Load sessions in a read-only state to prevent accidental changes.
 
 -   **Rotation Tracking**:
-    -   Assign rotations (1-6) to all heatmap points.
+    -   Assign rotations (1-6) to heatmap points when tracking is enabled.
     -   Left-click rotation buttons to set current rotation for assignment.
     -   Right-click rotation buttons to filter display by specific rotations.
     -   Rotation information displayed alongside jersey numbers (e.g., "12 - R3" or "R3").
     -   Auto-add current rotation to filters when drawing with active filters enabled.
+
+-   **Track Rotation Toggle (New in 1.1)**:
+    -   Toggle rotation tracking on/off via the Track Rotation button.
+    -   When off, rotation is not stored for new points (treated as "-" in filters).
+    -   Rotation controls are visually disabled when tracking is off.
+    -   Filtering logic treats untracked rotations as "-" similar to jersey "-".
+
+-   **Team Tracking (New in 1.1)**:
+    -   Toggle team tracking on/off via the Track Teams button (charting mode only).
+    -   Track lines as "Us" (green) or "Opp" (blue) teams.
+    -   When team tracking is off, all lines display in black.
+    -   Team colors are configurable in `CONFIG.teamColors`.
+    -   Team selection buttons show during drawing with color-coded backgrounds.
+    -   Line preview and final lines display in team colors during drawing.
 
 -   **Jersey Number Filtering**:
     -   Multi-select filtering - toggle multiple jersey numbers to filter display.
@@ -153,17 +167,38 @@ You can also modify grid dimensions, colors, and visual properties in other sect
 - **CONFIG.debug**: Debug mode, assertions, and logging level
 - **CONFIG.grid**: Canvas size, grid dimensions, and line properties
 - **CONFIG.colors**: Color schemes for different zones and elements
+- **CONFIG.teamColors**: Line and label colors for team tracking (us, opp, noTeam)
 - **CONFIG.drawing**: Cloud radius, line widths, fonts, and offsets
 
 **Note**: Modifying configuration requires editing the JavaScript file directly. Changes take effect when you reload the page.
 
 ## Version Information
 
-**Current Version:** 1.0
+**Current Version:** 1.1
 
 All session files are saved with version information to ensure future compatibility. The application automatically checks file versions when loading and can handle legacy files without version data.
 
 ### Version History
+
+#### Version 1.1 (December 2025)
+- **Track Rotation Toggle**: Optional rotation tracking with on/off toggle button
+  - Untracked rotation stored as `null` and displayed as "-" in filters
+  - Rotation controls visually disabled when tracking is off
+- **Team Tracking**: Track lines by team (charting mode only)
+  - Toggle team tracking on/off via Track Teams button
+  - "Us" team lines display in green (#00AA00)
+  - "Opp" team lines display in blue (#0000FF)
+  - Non-team-tracked lines display in black (#000000)
+  - Team colors configurable via `CONFIG.teamColors`
+  - Team buttons color-coded to match line colors
+  - Real-time preview shows correct team color while drawing
+- **Jersey Number Tracking**: Optional jersey number assignment
+  - Lines without jersey numbers stored with `null` value
+  - Automatic migration of older files to include null tracking
+- **Data Migration**: Automatic version upgrades with detailed migration reports
+  - Migrates jersey numbers and team data for points and undo/redo stacks
+  - Migration messages show counts for current points, undo stack, and redo stack
+- **Version Metadata**: All saved files include version information for compatibility
 
 #### Version 1.0 (December 2025)
 - Initial release

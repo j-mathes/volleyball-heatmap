@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
-  Volleyball Heatmap
-  Version 1.0
+    Volleyball Heatmap
+    Version 1.1
   Copyright (c) 2025 Jared Mathes
   
   This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0
@@ -19,7 +19,7 @@
     <!-- Session Start Modal -->
     <div id="sessionModal" class="modal">
         <div class="modal-content">
-            <div class="version-info">v1.0</div>
+            <div class="version-info">v1.1</div>
             <h1 class="modal-title">Volleyball Heatmap</h1>
             <h2>Start New Session</h2>
             <div class="mode-selection">
@@ -45,7 +45,7 @@
     <!-- Combine Mode Selection Modal -->
     <div id="combineModeModal" class="modal" style="display: none;">
         <div class="modal-content">
-            <div class="version-info">v1.0</div>
+            <div class="version-info">v1.1</div>
             <h2>Select Heatmap Type to Combine</h2>
             <p>You can only combine heatmaps of the same type.</p>
             <div class="mode-selection" style="margin-top: 15px;">
@@ -68,7 +68,7 @@
     <!-- Combine Files Modal -->
     <div id="combineFilesModal" class="modal" style="display: none;">
         <div class="modal-content">
-            <div class="version-info">v1.0</div>
+            <div class="version-info">v1.1</div>
             <h2>Select Heatmaps to Combine</h2>
             <div id="combineModeDisplay" class="session-mode-title"></div>
             <div class="file-name-display" id="combineFilesDisplay">No files chosen</div>
@@ -92,7 +92,7 @@
     <!-- Save Combined Modal -->
     <div id="saveCombinedModal" class="modal" style="display: none;">
         <div class="modal-content">
-            <div class="version-info">v1.0</div>
+            <div class="version-info">v1.1</div>
             <h2>Save Combined Heatmap</h2>
             <p>Enter a name for the combined heatmap session:</p>
             <input type="text" id="combinedSessionNameInput" placeholder="Enter session name..." maxlength="50">
@@ -112,7 +112,7 @@
     <!-- Load Session Modal -->
     <div id="loadModal" class="modal" style="display: none;">
         <div class="modal-content">
-            <div class="version-info">v1.0</div>
+            <div class="version-info">v1.1</div>
             <h2>Load Session</h2>
             <div class="file-name-display" id="fileNameDisplay">No file chosen</div>
             <input type="file" id="fileInput" accept=".json">
@@ -156,10 +156,16 @@
         <div id="modeBanner" class="mode-banner" style="display: none;"></div>
         <h1 id="sessionTitle">Volleyball Heatmap</h1>
         <div class="rotation-list">
+            <button id="trackRotationBtn" class="track-rotation-btn">Track<br>Rotation</button>
             <div id="rotationList"></div>
             <button id="clearRotationFiltersBtn" class="clear-rotation-filters-btn" style="display: none;">Clear Filters</button>
         </div>
+        <button id="trackTeamBtn" class="track-team-btn">Track<br>Teams</button>
         <div class="jersey-number-list">
+            <div id="teamButtons" class="team-buttons" style="display: none;">
+                <button id="teamUsBtn" class="team-btn active" data-team="us">Us</button>
+                <button id="teamOppBtn" class="team-btn" data-team="opp">Opp</button>
+            </div>
             <div id="jerseyNumberList"></div>
             <button id="clearJerseyFiltersBtn" class="clear-jersey-filters-btn" style="display: none;">Clear Filters</button>
         </div>

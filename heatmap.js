@@ -1,6 +1,6 @@
 /**
  * Volleyball Heatmap
- * Version 1.0
+ * Version 1.1
  * Copyright (c) 2025 Jared Mathes
  * 
  * This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0
@@ -26,7 +26,7 @@
      * @typedef {Object} AppConfig
      */
     const CONFIG = Object.freeze({
-        version: '1.0',
+        version: '1.1',
         debug: {
             enabled: false, // Enable debug mode for development
             assertionsEnabled: true, // Enable runtime assertions
@@ -60,8 +60,12 @@
             insideBelow: 'rgb(255, 200, 128)', // light orange
             newRect: 'rgb(200, 200, 200)', // light gray
             innerSquareBorder: '#333',
-            dashedLine: '#000000',
-            chartingLine: '#0000FF' // blue
+            dashedLine: '#000000'
+        },
+        teamColors: {
+            noTeam: '#000000', // black - when not tracking teams
+            us: '#00AA00', // green - our team
+            opp: '#0000FF' // blue - opponent team
         },
         gradient: {
             stops: [
@@ -483,6 +487,8 @@
             this.undoStack = [];
             this.redoStack = [];
             this.isViewOnly = false;
+            this.migrationInfo = null; // Store migration messages for user notification
+            // trackRotation is managed by HeatmapApp, not stored in session state
         }
         
         /**
@@ -593,6 +599,8 @@
         canUndo() {
             return this.undoStack.length > 0;
         }
+    
+        // Rotation tracking is controlled by HeatmapApp
         
         /**
          * Check if redo is available
@@ -627,8 +635,82 @@
             this.name = data.name || 'Loaded Session';
             this.mode = data.mode;
             this.points = data.points || [];
+            
+            // Migrate older files: add explicit null jerseyNumber for lines without jersey numbers
+            let pointsMigrated = 0;
+            let teamMigrated = 0;
+            this.points.forEach(point => {
+                if (point.line && !point.hasOwnProperty('jerseyNumber')) {
+                    point.jerseyNumber = null;
+                    pointsMigrated++;
+                }
+                if (point.line && !point.hasOwnProperty('team')) {
+                    point.team = null;
+                    teamMigrated++;
+                }
+            });
+            
             this.undoStack = data.undoStack || [];
             this.redoStack = data.redoStack || [];
+            
+            // Migrate undo/redo stacks
+            const migrateStack = (stack) => {
+                if (!stack || !Array.isArray(stack)) return { jersey: 0, team: 0 };
+                let jerseyCount = 0;
+                let teamCount = 0;
+                stack.forEach(action => {
+                    if (action.action === 'add' && action.point) {
+                        if (action.point.line && !action.point.hasOwnProperty('jerseyNumber')) {
+                            action.point.jerseyNumber = null;
+                            jerseyCount++;
+                        }
+                        if (action.point.line && !action.point.hasOwnProperty('team')) {
+                            action.point.team = null;
+                            teamCount++;
+                        }
+                    } else if (action.action === 'clear' && action.points) {
+                        action.points.forEach(point => {
+                            if (point.line && !point.hasOwnProperty('jerseyNumber')) {
+                                point.jerseyNumber = null;
+                                jerseyCount++;
+                            }
+                            if (point.line && !point.hasOwnProperty('team')) {
+                                point.team = null;
+                                teamCount++;
+                            }
+                        });
+                    }
+                });
+                return { jersey: jerseyCount, team: teamCount };
+            };
+            
+            const undoResults = migrateStack(this.undoStack);
+            const redoResults = migrateStack(this.redoStack);
+            pointsMigrated += undoResults.jersey + redoResults.jersey;
+            teamMigrated += undoResults.team + redoResults.team;ults.jersey;
+            const totalTeamMigrated = teamMigrated;
+            
+            // Notify user if data was migrated
+            if (totalMigrated > 0 || totalTeamMigrated > 0) {
+                const messages = [];
+                
+                if (totalMigrated > 0) {
+                    Logger.info(`Migrated ${totalMigrated} line(s) to include jersey number tracking`);
+                    const parts = [];
+                    if (pointsMigrated > 0) parts.push(`${pointsMigrated} current`);
+                    if (undoResults.jersey > 0) parts.push(`${undoResults.jersey} undo`);
+                    if (redoResults.jersey > 0) parts.push(`${redoResults.jersey} redo`);
+                    messages.push(`${totalMigrated} charting line(s) migrated to include jersey number tracking (${parts.join(', ')})`);
+                }
+                
+                if (totalTeamMigrated > 0) {
+                    Logger.info(`Migrated ${totalTeamMigrated} line(s) to include team tracking`);
+                    messages.push(`${totalTeamMigrated} charting line(s) migrated to include team tracking`);
+                }
+                
+                this.migrationInfo = messages.length > 0 ? `File updated:\n${messages.join('\n')}` : null;
+            }
+            
             this.isViewOnly = viewOnly;
         }
         
@@ -1031,8 +1113,18 @@
          * @param {number} endY
          * @param {string} [color] - Optional color override
          */
-        drawLine(startX, startY, endX, endY, color) {
-            this.overlayCtx.strokeStyle = color || this.config.colors.chartingLine;
+        drawLine(startX, startY, endX, endY, team) {
+            // Determine color based on team
+            let color;
+            if (team === 'us') {
+                color = this.config.teamColors.us;
+            } else if (team === 'opp') {
+                color = this.config.teamColors.opp;
+            } else {
+                color = this.config.teamColors.noTeam;
+            }
+            
+            this.overlayCtx.strokeStyle = color;
             this.overlayCtx.lineWidth = this.config.drawing.chartingLineWidth;
             this.overlayCtx.beginPath();
             this.overlayCtx.moveTo(startX, startY);
@@ -1049,13 +1141,34 @@
          * @param {number} endX
          * @param {number} endY
          */
-        drawJerseyNumber(jerseyNumber, rotation, x, y, endX, endY) {
+        drawJerseyNumber(jerseyNumber, rotation, x, y, endX, endY, team) {
             this.overlayCtx.font = this.config.drawing.numberFont;
-            this.overlayCtx.fillStyle = this.config.drawing.numberColor;
+            
+            // Determine color based on team
+            let color;
+            if (team === 'us') {
+                color = this.config.teamColors.us;
+            } else if (team === 'opp') {
+                color = this.config.teamColors.opp;
+            } else {
+                color = this.config.teamColors.noTeam;
+            }
+            
+            this.overlayCtx.fillStyle = color;
             this.overlayCtx.textBaseline = 'middle'; // Center vertically by default
             
             // Create display text with rotation suffix
-            const displayText = jerseyNumber ? `${jerseyNumber} - R${rotation}` : `R${rotation}`;
+            let displayText = '';
+            if (jerseyNumber && rotation) {
+                displayText = `${jerseyNumber} - R${rotation}`;
+            } else if (jerseyNumber && !rotation) {
+                displayText = `${jerseyNumber}`;
+            } else if (!jerseyNumber && rotation) {
+                displayText = `R${rotation}`;
+            } else {
+                displayText = '';
+            }
+            if (!displayText) return;
             
             // Calculate line direction
             const dx = endX - x;
@@ -1139,7 +1252,7 @@
             points.forEach(point => {
                 // Apply jersey number filter if active
                 if (jerseyNumberFilters !== null && jerseyNumberFilters.size > 0) {
-                    const pointJerseyNumber = (point.line && point.jerseyNumber) ? point.jerseyNumber : '-';
+                    const pointJerseyNumber = (point.line && point.jerseyNumber !== null && point.jerseyNumber !== undefined) ? point.jerseyNumber : '-';
                     if (!jerseyNumberFilters.has(pointJerseyNumber)) {
                         return; // Skip this point
                     }
@@ -1147,16 +1260,19 @@
                 
                 // Apply rotation filter if active
                 if (rotationFilters !== null && rotationFilters.size > 0) {
-                    if (!rotationFilters.has(point.rotation)) {
+                    // Treat null rotation as '-' and skip unless filter matches
+                    const rotVal = (point.rotation === null || point.rotation === undefined) ? '-' : point.rotation;
+                    if (!rotationFilters.has(rotVal)) {
                         return; // Skip this point
                     }
                 }
                 
                 // Draw line first if it exists and lines are visible
                 if (point.line && showLines) {
-                    this.drawLine(point.line.startX, point.line.startY, point.line.endX, point.line.endY);
-                    // Draw jersey number with rotation, or just rotation if no jersey number
-                    this.drawJerseyNumber(point.jerseyNumber || '', point.rotation, point.line.startX, point.line.startY, point.line.endX, point.line.endY);
+                    this.drawLine(point.line.startX, point.line.startY, point.line.endX, point.line.endY, point.team);
+                    // Draw jersey number with rotation when tracked; if rotation untracked, only jersey
+                    const rotationForDisplay = (point.rotation === null || point.rotation === undefined) ? null : point.rotation;
+                    this.drawJerseyNumber(point.jerseyNumber || '', rotationForDisplay, point.line.startX, point.line.startY, point.line.endX, point.line.endY, point.team);
                 }
                 this.drawCloud(point.x, point.y);
                 this.drawDot(point.x, point.y);
@@ -1265,7 +1381,8 @@
             
             points.forEach(point => {
                 if (point.line) {
-                    if (point.jerseyNumber) {
+                    // Check for null or undefined jersey number
+                    if (point.jerseyNumber !== null && point.jerseyNumber !== undefined) {
                         const num = point.jerseyNumber;
                         jerseyNumberCounts[num] = (jerseyNumberCounts[num] || 0) + 1;
                     } else {
@@ -1316,10 +1433,11 @@
             
             let html = '';
             for (let i = 1; i <= 6; i++) {
-                const isAssigned = !isViewOnly && assignedRotation === i;
+                const isAssigned = !isViewOnly && this.app && this.app.trackRotation && assignedRotation === i;
                 const isFiltered = filteredRotations && filteredRotations.has(i);
                 const classes = [];
                 if (isAssigned) classes.push('assigned');
+                if (this.app && !this.app.trackRotation) classes.push('disabled');
                 if (isFiltered) classes.push('filtered');
                 const className = classes.length > 0 ? ' ' + classes.join(' ') : '';
                 html += `<button class="rotation-list-item${className}" data-rotation="${i}">R${i}</button>`;
@@ -1350,6 +1468,25 @@
             if (redoBtn) redoBtn.disabled = !canRedo || isViewOnly;
             if (clearBtn) clearBtn.disabled = isViewOnly;
             if (saveBtn) saveBtn.disabled = isViewOnly;
+
+            // Update Track Rotation button state (toggle class instead of disabled)
+            const trackRotationBtn = this.elements.trackRotationBtn;
+            if (trackRotationBtn && this.app) {
+                trackRotationBtn.classList.toggle('toggled-off', !this.app.trackRotation);
+            }
+            
+            // Update Track Team button state
+            const trackTeamBtn = this.elements.trackTeamBtn;
+            if (trackTeamBtn && this.app) {
+                trackTeamBtn.classList.toggle('toggled-off', !this.app.trackTeam);
+            }
+            
+            // Show/hide team buttons based on trackTeam state and mode
+            const teamButtons = this.elements.teamButtons;
+            if (teamButtons && this.app) {
+                const shouldShowTeamButtons = this.app.state.mode === 'heatmapCharting' && this.app.trackTeam;
+                teamButtons.style.display = shouldShowTeamButtons ? 'flex' : 'none';
+            }
         }
         
         /**
@@ -1592,8 +1729,11 @@
             }
             
             const { minRotation, maxRotation } = CONFIG.validation;
-            if (typeof point.rotation !== 'number' || point.rotation < minRotation || point.rotation > maxRotation) {
-                throw new Error(`Invalid session file: point ${index} missing valid rotation (must be ${minRotation}-${maxRotation})`);
+            // Allow rotation to be null/undefined when not tracked
+            if (point.rotation !== null && point.rotation !== undefined) {
+                if (typeof point.rotation !== 'number' || point.rotation < minRotation || point.rotation > maxRotation) {
+                    throw new Error(`Invalid session file: point ${index} missing valid rotation (must be ${minRotation}-${maxRotation})`);
+                }
             }
         }
         
@@ -1633,6 +1773,7 @@
             this.geometry = new GridGeometry(config, 'simpleHeatmap');
             this.state = new SessionState();
             this.ui = new UIManager();
+            this.ui.app = this;
             
             // Canvas managers
             this.gridCanvas = null;
@@ -1660,10 +1801,15 @@
              */
             this.activeJerseyNumberFilters = new Set();
             this.linesVisible = true; // Toggle for line visibility
+            this.trackRotation = true; // Toggle for rotation tracking
+            this.trackTeam = true; // Toggle for team tracking
             
             // Rotation state
             this.currentRotation = 1; // Current rotation selected for assignment (1-6)
             this.activeRotationFilters = new Set(); // Active rotation filters for display (supports multiple)
+            
+            // Team state
+            this.currentTeam = 'us'; // Current team selected for assignment ('us' or 'opp')
             
             // Session state tracking
             this.hasUnsavedChanges = false; // Track if current session has unsaved changes
@@ -1768,6 +1914,11 @@
             this.ui.initElement('rotationList');
             this.ui.initElement('clearRotationFiltersBtn');
             this.ui.initElement('clearJerseyFiltersBtn');
+            this.ui.initElement('trackRotationBtn');
+            this.ui.initElement('trackTeamBtn');
+            this.ui.initElement('teamButtons');
+            this.ui.initElement('teamUsBtn');
+            this.ui.initElement('teamOppBtn');
             
             // Modal elements
             this.ui.initElement('sessionModal');
@@ -1856,6 +2007,21 @@
                 this.toggleLines.bind(this)
             );
             this.ui.addEventListener(
+                this.ui.getElement('trackRotationBtn'),
+                'click',
+                this.toggleTrackRotation.bind(this)
+            );
+            this.ui.addEventListener(
+                this.ui.getElement('trackTeamBtn'),
+                'click',
+                this.toggleTrackTeam.bind(this)
+            );
+            this.ui.addEventListener(
+                this.ui.getElement('teamButtons'),
+                'click',
+                this.handleTeamClick.bind(this)
+            );
+            this.ui.addEventListener(
                 this.ui.getElement('saveBtn'), 
                 'click', 
                 this.saveSession.bind(this)
@@ -1876,12 +2042,13 @@
                 }
             );
             
-            // Session modal events
-            this.ui.addEventListener(
-                this.ui.getElement('startSessionBtn'), 
-                'click', 
-                this.startNewSession.bind(this)
-            );
+            // Session modal events (defensive wiring)
+            const startBtn = this.ui.getElement('startSessionBtn');
+            if (startBtn) {
+                this.ui.addEventListener(startBtn, 'click', this.startNewSession.bind(this));
+            } else {
+                Logger.warn('Start Session button not found');
+            }
             this.ui.addEventListener(
                 this.ui.getElement('sessionNameInput'), 
                 'keypress', 
@@ -1889,16 +2056,18 @@
                     if (e.key === 'Enter') this.startNewSession();
                 }
             );
-            this.ui.addEventListener(
-                this.ui.getElement('loadSessionBtn'), 
-                'click', 
-                () => this.ui.showLoadModal()
-            );
-            this.ui.addEventListener(
-                this.ui.getElement('combineSessionBtn'),
-                'click',
-                () => this.showCombineModeModal()
-            );
+            const loadBtn = this.ui.getElement('loadSessionBtn');
+            if (loadBtn) {
+                this.ui.addEventListener(loadBtn, 'click', () => this.ui.showLoadModal());
+            } else {
+                Logger.warn('Load Session button not found');
+            }
+            const combineBtn = this.ui.getElement('combineSessionBtn');
+            if (combineBtn) {
+                this.ui.addEventListener(combineBtn, 'click', () => this.showCombineModeModal());
+            } else {
+                Logger.warn('Combine Heatmaps button not found');
+            }
             
             // Combine mode modal events
             this.ui.addEventListener(
@@ -2079,8 +2248,9 @@
                     this.activeRotationFilters.add(this.currentRotation);
                 }
                 
-                Logger.debug('Adding point at', x, y, 'rotation', this.currentRotation);
-                this.state.addPoint({ x, y, rotation: this.currentRotation });
+                const rotationValue = this.trackRotation ? this.currentRotation : null;
+                Logger.debug('Adding point at', x, y, 'rotation', rotationValue);
+                this.state.addPoint({ x, y, rotation: rotationValue });
                 this.hasUnsavedChanges = true;
                 
                 // Redraw all to respect filters
@@ -2144,21 +2314,22 @@
                 const point = {
                     x,
                     y,
-                    rotation: this.currentRotation,
+                    rotation: this.trackRotation ? this.currentRotation : null,
                     line: {
                         startX: this.lineStart.x,
                         startY: this.lineStart.y,
                         endX: x,
                         endY: y
-                    }
+                    },
+                    team: this.trackTeam ? this.currentTeam : null
                 };
                 
-                // Add jersey number if one was entered (sanitize it first)
+                // Always set jersey number (null if not entered)
                 if (this.currentJerseyNumber) {
                     const sanitized = sanitizeJerseyNumber(this.currentJerseyNumber);
-                    if (sanitized) {
-                        point.jerseyNumber = sanitized;
-                    }
+                    point.jerseyNumber = sanitized || null;
+                } else {
+                    point.jerseyNumber = null;
                 }
                 
                 Logger.debug('Adding line point', point);
@@ -2197,7 +2368,18 @@
                 // Draw temporary line preview in charting mode
                 if (this.isDrawing && this.lineStart && this.state.mode === 'heatmapCharting') {
                     this.tempCtx.clearRect(0, 0, this.tempCanvas.width, this.tempCanvas.height);
-                    this.tempCtx.strokeStyle = this.config.colors.chartingLine;
+                    
+                    // Use team color for preview line
+                    let previewColor;
+                    if (this.trackTeam && this.currentTeam === 'us') {
+                        previewColor = this.config.teamColors.us;
+                    } else if (this.trackTeam && this.currentTeam === 'opp') {
+                        previewColor = this.config.teamColors.opp;
+                    } else {
+                        previewColor = this.config.teamColors.noTeam;
+                    }
+                    
+                    this.tempCtx.strokeStyle = previewColor;
                     this.tempCtx.lineWidth = this.config.drawing.chartingLineWidth;
                     this.tempCtx.beginPath();
                     this.tempCtx.moveTo(this.lineStart.x, this.lineStart.y);
@@ -2221,6 +2403,42 @@
             
             // Redraw with current filter and visibility setting
             this.heatmapRenderer.redrawAll(this.state.getPoints(), this.activeJerseyNumberFilters, this.activeRotationFilters, this.linesVisible);
+        }
+        
+        /**
+         * Toggle rotation tracking on/off
+         */
+        toggleTrackRotation() {
+            if (this.state.isViewOnly) return;
+            
+            this.trackRotation = !this.trackRotation;
+            
+            // Clear rotation filters when toggling off
+            if (!this.trackRotation) {
+                this.activeRotationFilters.clear();
+            }
+            
+            // Update UI
+            this.updateUI();
+            this.refreshDisplay();
+            
+            Logger.info('Track rotation toggled:', this.trackRotation ? 'ON' : 'OFF');
+        }
+        
+        /**
+         * Toggle team tracking on/off
+         */
+        toggleTrackTeam() {
+            if (this.state.isViewOnly) return;
+            
+            this.trackTeam = !this.trackTeam;
+            
+            // Update UI
+            this.updateLineUIVisibility();
+            this.updateUI();
+            this.refreshDisplay();
+            
+            Logger.info('Track team toggled:', this.trackTeam ? 'ON' : 'OFF');
         }
         
         /**
@@ -2301,6 +2519,12 @@
                 }
                 
                 this.state.load(data, viewOnly);
+                
+                // Show migration message if data was updated
+                if (this.state.migrationInfo) {
+                    alert(this.state.migrationInfo);
+                    this.state.migrationInfo = null; // Clear after showing
+                }
                 
                 this.updateGeometry(this.state.mode);
                 this.gridRenderer.draw();
@@ -2678,6 +2902,7 @@
          */
         handleRotationClick(event) {
             if (this.state.isViewOnly) return;
+            if (!this.trackRotation) return; // ignore when rotation tracking is off
             const button = event.target.closest('.rotation-list-item');
             if (!button) return;
             
@@ -2717,6 +2942,7 @@
          */
         handleRotationRightClick(event) {
             event.preventDefault(); // Prevent context menu
+            if (!this.trackRotation) return; // ignore filtering when rotation tracking is off
             const button = event.target.closest('.rotation-list-item');
             if (!button) return;
             
@@ -2774,6 +3000,29 @@
             
             // Redraw with filters
             this.refreshDisplay();
+        }
+        
+        /**
+         * Handle team button clicks
+         * @param {MouseEvent} event
+         */
+        handleTeamClick(event) {
+            if (this.state.isViewOnly) return;
+            const button = event.target.closest('.team-btn');
+            if (!button) return;
+            
+            const team = button.getAttribute('data-team');
+            this.currentTeam = team;
+            
+            // Update button states
+            const teamButtons = this.ui.getElement('teamButtons');
+            if (teamButtons) {
+                teamButtons.querySelectorAll('.team-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.getAttribute('data-team') === team);
+                });
+            }
+            
+            Logger.info('Team selected:', team);
         }
         
         /**
@@ -2859,11 +3108,18 @@
             const toggleLinesBtn = this.ui.getElement('toggleLinesBtn');
             const jerseyNumberInput = this.ui.getElement('jerseyNumberInput');
             const jerseyNumberList = this.ui.getElement('jerseyNumberList');
+            const trackTeamBtn = this.ui.getElement('trackTeamBtn');
+            const teamButtons = this.ui.getElement('teamButtons');
             const container = this.ui.getElement('mainContainer');
             
             if (toggleLinesBtn) toggleLinesBtn.style.display = display;
             if (jerseyNumberInput) jerseyNumberInput.style.display = display;
             if (jerseyNumberList) jerseyNumberList.style.display = display;
+            if (trackTeamBtn) trackTeamBtn.style.display = display;
+            // Always hide team buttons in simple mode
+            if (teamButtons) {
+                teamButtons.style.display = isChartingMode && this.trackTeam ? 'flex' : 'none';
+            }
             
             // Adjust container padding based on mode
             // Both modes need left padding for rotation buttons, right padding only for charting mode
